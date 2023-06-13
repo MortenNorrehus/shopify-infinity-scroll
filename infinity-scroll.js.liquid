@@ -1,0 +1,43 @@
+window.addEventListener("DOMContentLoaded", (event) => {
+    let page = 2;
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            const intersecting = entry.isIntersecting
+            console.log(entry.isIntersecting);
+            if (intersecting) {
+                loadProducts(page, observer);
+                page++;
+            }
+        })
+    })
+    observer.observe(document.getElementById("infiniteObserver"))
+});
+
+
+async function loadProducts(page, observer) {
+
+    /* Add loading animation */ 
+    document.querySelector('#infiniteObserver').classList.add('loading');
+
+    /* Get HTML for next page */ 
+    const get = await fetch('{{ collection.url }}?page=' + page);
+    const result = await get.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(result, "text/html");
+
+    /* If next page is empty - unobserve */ 
+    if (doc.querySelector('.ProductList').children.length == 0) {
+        observer.unobserve(document.getElementById("infiniteObserver"))
+    }
+
+    /* Insert HTML */ 
+    document.querySelector('.ProductList').insertAdjacentHTML('beforeend', doc.querySelector('.ProductList').innerHTML);
+    document.querySelector('#infiniteObserver').classList.remove('loading');
+
+    document.querySelectorAll('.ProductItem').forEach(item => {
+        item.style.opacity = '1';
+        item.style.visibility = 'visible';
+        item.style.transform = 'matrix(1, 0, 0, 1, 0, 0)';
+    });
+}
